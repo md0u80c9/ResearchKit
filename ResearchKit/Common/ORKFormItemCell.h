@@ -104,6 +104,10 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 
+@interface ORKFormItemDatePickerCell : UITableViewCell
+
+@end
+
 @interface ORKFormItemScaleCell : ORKFormItemCell
 
 @end

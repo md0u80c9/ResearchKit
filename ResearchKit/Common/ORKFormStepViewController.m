@@ -291,6 +291,8 @@
     NSMutableArray<ORKTableSection *> *_sections;
     BOOL _skipped;
     ORKFormItemCell *_currentFirstResponderCell;
+    NSIndexPath *activePicker;
+    ORKQuestionType *activePickerType;
 }
 
 - (instancetype)ORKFormStepViewController_initWithResult:(ORKResult *)result {
@@ -759,7 +761,32 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return [self numberOfRowsInSection:section];
+    NSInteger rowsToReturn = [self numberOfRowsInSection:section];
+    if (activePicker) {
+        if (activePicker.section == section) {
+            rowsToReturn++;
+        }
+    }
+    return rowsToReturn;
+}
+
+- (NSIndexPath *)indexPathIncludingPickers:(NSIndexPath *)inputIndexPath {
+    if (activePicker == nil) {
+        return inputIndexPath;
+    }
+    else {
+        if (inputIndexPath.section != activePicker.section) {
+            return inputIndexPath;
+        }
+        else {
+            if (inputIndexPath.row <= activePicker.row) {
+                return inputIndexPath;
+            }
+            else {
+                return [NSIndexPath indexPathForRow:(inputIndexPath.row - 1) inSection:inputIndexPath.section];
+            }
+        }
+    }
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -768,6 +795,15 @@
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:identifier];
     
     if (cell == nil) {
+        if (activePicker) {
+            if ((indexPath.section == activePicker.section) && (indexPath.row == activePicker.row)) {
+                cell = [[ORKFormItemDatePickerCell alloc] init];
+                return cell;
+            }
+        }
+
+        indexPath = [self indexPathIncludingPickers:indexPath];
+    
         ORKTableSection *section = (ORKTableSection *)_sections[indexPath.section];
         ORKTableCellItem *cellItem = [section items][indexPath.row];
         ORKFormItem *formItem = cellItem.formItem;
@@ -880,6 +916,105 @@
     return isSelected;
 }
 
+#pragma mark Picker setup
+
+/*! Updates the UIDatePicker's value to match with the date of the cell above it.
+ */
+- (void)updateDatePicker
+{
+    if (activePicker != nil)
+    {
+/*        UITableViewCell *associatedDatePickerCell = [self.tableView cellForRowAtIndexPath:self.datePickerIndexPath];
+        
+        UIDatePicker *targetedDatePicker = (UIDatePicker *)[associatedDatePickerCell viewWithTag:kDatePickerTag];
+        if (targetedDatePicker != nil)
+        {
+            // we found a UIDatePicker in this cell, so update it's date value
+            //
+            NSDictionary *itemData = self.dataArray[self.datePickerIndexPath.row - 1];
+            [targetedDatePicker setDate:[itemData valueForKey:kDateKey] animated:NO];
+        }*/
+    }
+}
+
+/*! Adds or removes a UIDatePicker cell below the given indexPath.
+ 
+ @param indexPath The indexPath to reveal the UIDatePicker.
+ */
+- (void)toggleDatePickerForSelectedIndexPath:(NSIndexPath *)indexPath
+{
+    [self.tableView beginUpdates];
+    
+    NSArray *indexPaths = @[[NSIndexPath indexPathForRow:indexPath.row + 1 inSection:indexPath.section]];
+    
+    // check if 'indexPath' has an attached date picker below it
+    if ((activePicker.section == indexPath.section) && (activePicker.row == indexPath.row))
+    {
+        // found a picker below it, so remove it
+        [self.tableView deleteRowsAtIndexPaths:indexPaths
+                              withRowAnimation:UITableViewRowAnimationFade];
+    }
+    else
+    {
+        // didn't find a picker below it, so we should insert it
+        [self.tableView insertRowsAtIndexPaths:indexPaths
+                              withRowAnimation:UITableViewRowAnimationFade];
+    }
+    
+    [self.tableView endUpdates];
+}
+
+/*! Reveals the date picker inline for the given indexPath, called by "didSelectRowAtIndexPath".
+ 
+ @param indexPath The indexPath to reveal the UIDatePicker.
+ */
+- (void)displayInlineDatePickerForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    // display the date picker inline with the table content
+    [self.tableView beginUpdates];
+    
+    BOOL before = NO;   // indicates if the date picker is below "indexPath", help us determine which row to reveal
+    if (activePicker != nil)
+    {
+        before = activePicker.row < indexPath.row;
+    }
+    
+    BOOL sameCellClicked = (activePicker.row - 1 == indexPath.row);
+    
+    // remove any date picker cell if it exists
+    if (activePicker != nil)
+    {
+        [self.tableView deleteRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:activePicker.row inSection:activePicker.section]]
+                              withRowAnimation:UITableViewRowAnimationFade];
+        activePicker = nil;
+    }
+    
+    if (!sameCellClicked)
+    {
+        // hide the old date picker and display the new one
+        NSInteger rowToReveal = (before ? indexPath.row - 1 : indexPath.row);
+        NSIndexPath *indexPathToReveal = [NSIndexPath indexPathForRow:rowToReveal inSection:indexPath.section];
+        
+        [self toggleDatePickerForSelectedIndexPath:indexPathToReveal];
+        activePicker = [NSIndexPath indexPathForRow:indexPathToReveal.row + 1 inSection:indexPath.section];
+        
+        // Now check what type of picker we need to be displaying
+        ORKTableSection *section = (ORKTableSection *)_sections[indexPathToReveal.section];
+        ORKTableCellItem *cellItem = [section items][indexPathToReveal.row];
+        ORKAnswerFormat *answerFormat = [cellItem.formItem impliedAnswerFormat];
+        activePickerType = answerFormat.questionType;
+        
+    }
+    
+    // always deselect the row containing the start or end date
+    [self.tableView deselectRowAtIndexPath:indexPath animated:YES];
+    
+    [self.tableView endUpdates];
+    
+    // inform our date picker of the current date to match the current cell
+    [self updateDatePicker];
+}
+
 #pragma mark UITableViewDelegate
 
 - (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -897,6 +1032,9 @@
         // Dismiss other textField's keyboard 
         [tableView endEditing:NO];
         
+        // FIXME the indexPaths will need adjusting here...
+        indexPath = [self indexPathIncludingPickers:indexPath];
+        
         ORKTableSection *section = _sections[indexPath.section];
         ORKTableCellItem *cellItem = section.items[indexPath.row];
         [section.textChoiceCellGroup didSelectCellAtIndexPath:indexPath];
@@ -911,6 +1049,10 @@
         [self updateButtonStates];
         [self notifyDelegateOnResultChange];
     }
+    if ([cell isKindOfClass:[ORKFormItemPickerCell class]]) {
+        [self displayInlineDatePickerForRowAtIndexPath:indexPath];
+    }
+    
     [_tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionNone animated:YES];
 }
 

@@ -1047,6 +1047,46 @@ static const CGFloat HorizontalMargin = 15.0;
 
 @end
 
+#pragma mark - ORKFormItemDatePickerCell
+
+@interface ORKFormItemDatePickerCell ()
+
+@end
+
+
+@implementation ORKFormItemDatePickerCell {
+    UIDatePicker *_datePickerView;
+}
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier {
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
+
+    _datePickerView = [[UIDatePicker alloc] init];
+    [self.contentView addSubview:_datePickerView];
+    [self setUpConstraints];
+    return self;
+}
+
+- (void)setUpConstraints {
+    NSMutableArray *constraints = [NSMutableArray new];
+    
+    NSDictionary *views = @{ @"datePickerView": _datePickerView };
+    ORKEnableAutoLayoutForViews(views.allValues);
+    [constraints addObjectsFromArray:
+     [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[datePickerView]|"
+                                             options:NSLayoutFormatDirectionLeadingToTrailing
+                                             metrics:nil
+                                               views:views]];
+    [constraints addObjectsFromArray:
+     [NSLayoutConstraint constraintsWithVisualFormat:@"H:|[datePickerView]|"
+                                             options:NSLayoutFormatDirectionLeadingToTrailing
+                                             metrics:nil
+                                               views:views]];
+    
+    [NSLayoutConstraint activateConstraints:constraints];
+}
+
+@end
 
 #pragma mark - ORKFormItemPickerCell
 
