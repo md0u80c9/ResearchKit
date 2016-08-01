@@ -1049,20 +1049,19 @@ static const CGFloat HorizontalMargin = 15.0;
 
 #pragma mark - ORKFormItemDatePickerCell
 
-@interface ORKFormItemDatePickerCell ()
+@interface ORKFormItemPickerInputCell ()
 
 @end
 
 
-@implementation ORKFormItemDatePickerCell {
-    UIDatePicker *_datePickerView;
+@implementation ORKFormItemPickerInputCell {
+    UIView *_pickerView;
 }
 
-- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier {
-    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
-
-    _datePickerView = [[UIDatePicker alloc] init];
-    [self.contentView addSubview:_datePickerView];
+- (instancetype)initWithFormItemPickerCell:(ORKFormItemPickerCell *)formItemPickerCell withReuseIdentifier:(NSString *)reuseIdentifier {
+    self = [super initWithStyle:UITableViewCellStyleDefault reuseIdentifier:reuseIdentifier];
+    _pickerView = formItemPickerCell.picker.pickerView;
+    [self.contentView addSubview:_pickerView];
     [self setUpConstraints];
     return self;
 }
@@ -1070,15 +1069,15 @@ static const CGFloat HorizontalMargin = 15.0;
 - (void)setUpConstraints {
     NSMutableArray *constraints = [NSMutableArray new];
     
-    NSDictionary *views = @{ @"datePickerView": _datePickerView };
+    NSDictionary *views = @{ @"pickerView": _pickerView };
     ORKEnableAutoLayoutForViews(views.allValues);
     [constraints addObjectsFromArray:
-     [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[datePickerView]|"
+     [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[pickerView]|"
                                              options:NSLayoutFormatDirectionLeadingToTrailing
                                              metrics:nil
                                                views:views]];
     [constraints addObjectsFromArray:
-     [NSLayoutConstraint constraintsWithVisualFormat:@"H:|[datePickerView]|"
+     [NSLayoutConstraint constraintsWithVisualFormat:@"H:|[pickerView]|"
                                              options:NSLayoutFormatDirectionLeadingToTrailing
                                              metrics:nil
                                                views:views]];
@@ -1182,6 +1181,7 @@ static const CGFloat HorizontalMargin = 15.0;
     }
     
     return shouldBeginEditing;
+//    return NO;
 }
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {

@@ -32,6 +32,7 @@
 #import <UIKit/UIKit.h>
 #import <ResearchKit/ORKFormStep.h>
 #import "ORKSkin.h"
+#import "ORKPicker.h"
 
 
 NS_ASSUME_NONNULL_BEGIN
@@ -101,10 +102,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface ORKFormItemPickerCell : ORKFormItemTextFieldBasedCell
 
+@property (nonatomic, weak, readonly) id <ORKPicker> picker;
+
 @end
 
 
-@interface ORKFormItemDatePickerCell : UITableViewCell
+@interface ORKFormItemPickerInputCell : UITableViewCell
+
+- (instancetype)initWithFormItemPickerCell:(ORKFormItemPickerCell *)formItemPickerCell withReuseIdentifier:(NSString *)reuseIdentifier;
 
 @end
 
