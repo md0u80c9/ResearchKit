@@ -292,7 +292,6 @@
     BOOL _skipped;
     ORKFormItemCell *_currentFirstResponderCell;
     NSIndexPath *activePickerIndex;
-    ORKQuestionType *activePickerType;
 }
 
 - (instancetype)ORKFormStepViewController_initWithResult:(ORKResult *)result {
@@ -920,25 +919,6 @@
 
 #pragma mark Picker setup
 
-/*! Updates the UIDatePicker's value to match with the date of the cell above it.
- */
-- (void)updateDatePicker
-{
-    if (activePickerIndex != nil)
-    {
-/*        UITableViewCell *associatedDatePickerCell = [self.tableView cellForRowAtIndexPath:self.datePickerIndexPath];
-        
-        UIDatePicker *targetedDatePicker = (UIDatePicker *)[associatedDatePickerCell viewWithTag:kDatePickerTag];
-        if (targetedDatePicker != nil)
-        {
-            // we found a UIDatePicker in this cell, so update it's date value
-            //
-            NSDictionary *itemData = self.dataArray[self.datePickerIndexPath.row - 1];
-            [targetedDatePicker setDate:[itemData valueForKey:kDateKey] animated:NO];
-        }*/
-    }
-}
-
 /*! Adds or removes a UIDatePicker cell below the given indexPath.
  
  @param indexPath The indexPath to reveal the UIDatePicker.
@@ -1000,21 +980,12 @@
         [self toggleDatePickerForSelectedIndexPath:indexPathToReveal];
         activePickerIndex = [NSIndexPath indexPathForRow:indexPathToReveal.row + 1 inSection:indexPath.section];
         
-        // Now check what type of picker we need to be displaying
-        ORKTableSection *section = (ORKTableSection *)_sections[indexPathToReveal.section];
-        ORKTableCellItem *cellItem = [section items][indexPathToReveal.row];
-        ORKAnswerFormat *answerFormat = [cellItem.formItem impliedAnswerFormat];
-        activePickerType = answerFormat.questionType;
-        
     }
     
     // always deselect the row containing the start or end date
     [self.tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     [self.tableView endUpdates];
-    
-    // inform our date picker of the current date to match the current cell
-    [self updateDatePicker];
 }
 
 #pragma mark UITableViewDelegate
